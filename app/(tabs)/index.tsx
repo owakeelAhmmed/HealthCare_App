@@ -1,75 +1,168 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "expo-router";
+import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
+  const { user, logout, loading } = useAuth();
+  const router = useRouter();
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
+        <Text className="text-lg text-gray-600">Loading...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
+        <Text className="text-lg text-gray-600 mb-4">Please login first</Text>
+        <TouchableOpacity 
+          onPress={() => router.replace('/(auth)/login')}
+          className="bg-blue-600 px-6 py-3 rounded-lg"
+        >
+          <Text className="text-white">Go to Login</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <SafeAreaView className="flex-1 bg-gray-50">
+      <ScrollView
+        contentContainerStyle={{
+          paddingBottom: 40,
+          paddingTop: 20,
+        }}
+      >
+        {/* Header Section */}
+        <View className="bg-white px-6 py-6 mb-4 rounded-b-2xl shadow-sm">
+          <View className="flex-row justify-between items-center mb-6 bg-[#44e394] px-4 pt-4 rounded-2xl">
+            <View className="flex-1">
+              <Text className="text-white text-2xl font-bold ">
+                HEALTH<Text className=""> CARE</Text>
+              </Text>
+              <Text className="text-white text-sm">
+                Your Health, Our Priority
+              </Text>
+            </View>
+
+            <View className="flex-row items-center">
+              <Image
+                className="w-[100px] h-[100px] mr-4"
+                source={require("../../assets/images/hederImg.png")}
+                resizeMode="contain"
+              />
+              <TouchableOpacity
+                onPress={logout}
+                className="bg-red-100 px-4 py-2 rounded-lg"
+              >
+                <Text className="text-red-600 font-medium">Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Welcome Message */}
+          <View className="p-4">
+            <Text className="text-3xl font-bold text-gray-800">
+              Welcome,{" "}
+              {user?.first_name
+                ? `${user.first_name} ${user.last_name}`
+                : "User"}
+              !
+            </Text>
+            <Text className="text-gray-600 mt-2 text-lg">
+              How can we help you today?
+            </Text>
+          </View>
+        </View>
+
+        {/* Quick Actions Grid */}
+        <View className="px-6 mt-4">
+          <Text className="text-xl font-bold text-gray-800 mb-4">
+            Quick Actions
+          </Text>
+
+          <View className="flex-row flex-wrap justify-between">
+            {/* Book Appointment */}
+            <TouchableOpacity
+              className="w-[48%] mb-4"
+              onPress={() => router.push("/book-appointment")}
+            >
+              <View className="bg-white p-5 rounded-xl shadow-sm items-center">
+                <View className="bg-blue-100 p-3 rounded-full mb-3">
+                  <Text className="text-blue-600 text-2xl">📅</Text>
+                </View>
+                <Text className="font-semibold text-gray-800 text-center">
+                  Book Appointment
+                </Text>
+                <Text className="text-gray-500 text-xs text-center mt-1">
+                  Schedule with doctors
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Find Doctors */}
+            <TouchableOpacity
+              className="w-[48%] mb-4"
+              onPress={() => router.push("/doctors")}
+            >
+              <View className="bg-white p-5 rounded-xl shadow-sm items-center">
+                <View className="bg-green-100 p-3 rounded-full mb-3">
+                  <Text className="text-green-600 text-2xl">👨‍⚕️</Text>
+                </View>
+                <Text className="font-semibold text-gray-800 text-center">
+                  Find Doctors
+                </Text>
+                <Text className="text-gray-500 text-xs text-center mt-1">
+                  Browse specialists
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* My Appointments */}
+            <TouchableOpacity
+              className="w-[48%] mb-4"
+              onPress={() => router.push("/appointments")}
+            >
+              <View className="bg-white p-5 rounded-xl shadow-sm items-center">
+                <View className="bg-purple-100 p-3 rounded-full mb-3">
+                  <Text className="text-purple-600 text-2xl">📋</Text>
+                </View>
+                <Text className="font-semibold text-gray-800 text-center">
+                  My Appointments
+                </Text>
+                <Text className="text-gray-500 text-xs text-center mt-1">
+                  View bookings
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Emergency */}
+            <TouchableOpacity
+              className="w-[48%] mb-4"
+              onPress={() => router.push("/emergency")}
+            >
+              <View className="bg-white p-5 rounded-xl shadow-sm items-center">
+                <View className="bg-red-100 p-3 rounded-full mb-3">
+                  <Text className="text-red-600 text-2xl">🚑</Text>
+                </View>
+                <Text className="font-semibold text-gray-800 text-center">
+                  Emergency
+                </Text>
+                <Text className="text-gray-500 text-xs text-center mt-1">
+                  Immediate help
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Bottom spacing */}
+        <View className="h-10" />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
