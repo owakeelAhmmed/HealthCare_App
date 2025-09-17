@@ -25,7 +25,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       // 1. Get JWT token
-      const tokenRes = await fetch("http://192.168.68.121:8000/api/auth/jwt/create/", {
+      const tokenRes = await fetch("https://health-care-backend-tawny.vercel.app/api/auth/jwt/create/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -38,7 +38,7 @@ export default function LoginScreen() {
       }
 
       // 2. Get user details
-      const userRes = await fetch("http://192.168.68.121:8000/api/auth/users/me/", {
+      const userRes = await fetch("https://health-care-backend-tawny.vercel.app/api/auth/users/me/", {
         headers: {
           "Authorization": `JWT ${tokenData.access}`,
         },
@@ -64,7 +64,7 @@ export default function LoginScreen() {
         phone: userData.phone || ""
       };
 
-      console.log("Complete user data to save:", completeUserData);
+      // console.log("Complete user data to save:", completeUserData);
 
       // 5. Save in AuthContext & AsyncStorage
       await login(completeUserData, tokenData.access);

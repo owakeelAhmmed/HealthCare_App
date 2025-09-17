@@ -52,10 +52,10 @@ export default function RegisterScreen() {
         password2: formData.confirmPassword
       };
 
-      console.log('Sending data:', requestData);
+      // console.log('Sending data:', requestData);
 
       // Use your custom registration endpoint
-      const response = await fetch('http://192.168.68.121:8000/api/auth/users/', {
+      const response = await fetch('https://health-care-backend-tawny.vercel.app/api/auth/users/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ export default function RegisterScreen() {
       });
 
       const responseData = await response.json();
-      console.log('Response:', responseData);
+      // console.log('Response:', responseData);
 
       if (response.ok) {
         Alert.alert('Success', 'Registration successful!');

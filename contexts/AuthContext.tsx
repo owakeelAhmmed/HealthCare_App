@@ -39,20 +39,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     checkAuthStatus();
   }, []);
 
-  const checkAuthStatus = async () => {
-    try {
-      const token = await AsyncStorage.getItem('access_token');
-      const userData = await AsyncStorage.getItem('user_data');
+const checkAuthStatus = async () => {
+  try {
+    const token = await AsyncStorage.getItem('access_token');
+    const userData = await AsyncStorage.getItem('user_data');
 
-      if (token && userData) {
-        setUser(JSON.parse(userData));
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-    } finally {
-      setLoading(false);
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+    } else {
+      setUser(null);
     }
-  };
+  } catch (error) {
+    console.error('Error checking auth status:', error);
+    setUser(null);
+  } finally {
+    // 🚀 loader শেষ হওয়া safe করবে
+    setLoading(false);
+  }
+};
+
 
   const login = async (userData: User, token: string) => {
     try {

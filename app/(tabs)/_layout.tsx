@@ -18,7 +18,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* অন্যান্য tabs如果需要 */}
     </Tabs>
   );
 }
