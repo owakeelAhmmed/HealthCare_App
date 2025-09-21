@@ -1,22 +1,46 @@
-import { Text, TextInput, TextInputProps, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 
-interface InputProps extends TextInputProps {
+interface InputProps {
   label: string;
+  placeholder: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  secureTextEntry?: boolean;
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  maxLength?: number;
   error?: string;
 }
 
-export default function Input({ label, error, ...props }: InputProps) {
+export default function Input({
+  label,
+  placeholder,
+  value,
+  onChangeText,
+  secureTextEntry = false,
+  keyboardType = 'default',
+  autoCapitalize = 'none',
+  maxLength,
+  error
+}: InputProps) {
   return (
-    <View className="space-y-2 mb-2 mt-2">
-      <Text className="text-gray-700 font-medium">{label}</Text>
+    <View>
+      <Text className="text-gray-700 mb-2">{label}</Text>
       <TextInput
         className={`border rounded-lg px-4 py-3 bg-white ${
           error ? 'border-red-500' : 'border-gray-300'
         }`}
-        placeholderTextColor="#9ca3af"
-        {...props}
+        placeholder={placeholder}
+        value={value}
+        onChangeText={onChangeText}
+        secureTextEntry={secureTextEntry}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        maxLength={maxLength}
       />
-      {error && <Text className="text-red-500 text-sm">{error}</Text>}
+      {error && (
+        <Text className="text-red-500 text-sm mt-1">{error}</Text>
+      )}
     </View>
   );
 }
