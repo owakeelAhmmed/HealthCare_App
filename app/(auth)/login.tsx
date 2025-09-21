@@ -1,7 +1,7 @@
-import { useAuth } from "@/contexts/AuthContext";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   Text,
@@ -9,74 +9,157 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { API_ENDPOINTS } from "../config/api";
 
 export default function LoginScreen() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+  });
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+
+
+  // Function to map integer user_type to string
+  const getUserTypeString = (userTypeInt) => {
+    switch (userTypeInt) {
+      case 1: return 'patient';
+      case 2: return 'doctor';
+      case 3: return 'admin';
+      default: return 'patient';
+    }
+  };
+
+  // Function to decode JWT token
+  const decodeJWT = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error("Error decoding JWT:", error);
+      return null;
+    }
+  };
 
   const handleLogin = async () => {
-    if (!username || !password) {
+    if (!formData.username || !formData.password) {
       Alert.alert("Error", "Please enter both username and password");
       return;
     }
 
     setLoading(true);
     try {
-      // 1. Get JWT token
-      const tokenRes = await fetch("https://health-care-backend-tawny.vercel.app/api/auth/jwt/create/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const tokenData = await tokenRes.json();
-
-      if (!tokenRes.ok || !tokenData.access) {
-        throw new Error(tokenData.detail || "Invalid credentials");
-      }
-
-      // 2. Get user details
-      const userRes = await fetch("https://health-care-backend-tawny.vercel.app/api/auth/users/me/", {
-        headers: {
-          "Authorization": `JWT ${tokenData.access}`,
+      // 1. Login API call to get JWT token
+      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
         },
+        body: JSON.stringify(formData),
       });
 
-      const userData = await userRes.json();
+      const tokenData = await response.json();
 
-      if (!userRes.ok) {
-        throw new Error("Failed to fetch user data");
+      if (!response.ok) {
+        throw new Error(tokenData.detail || tokenData.error || "Invalid credentials");
       }
 
-      // 3. DEBUG: Check what data comes from API
-      // console.log("Full user data from API:", userData);
+      // console.log("Login API response:", tokenData);
 
-      // 4. Ensure all required fields with fallback values
-      const completeUserData = {
-        id: userData.id,
-        username: userData.username,
-        email: userData.email,
-        first_name: userData.first_name || userData.username || "",
-        last_name: userData.last_name || "",
-        user_type: userData.user_type || "patient",
-        phone: userData.phone || ""
+      // Check if we have access token
+      if (!tokenData.access) {
+        throw new Error("Access token not found in response");
+      }
+
+      // 2. Decode JWT token to get user information
+      const decodedToken = decodeJWT(tokenData.access);
+
+
+      if (!decodedToken) {
+        throw new Error("Failed to decode JWT token");
+      }
+
+      // 3. Get user details from token or fetch from API
+      let userData;
+      
+      // Try to fetch user profile from API
+      try {
+        const userResponse = await fetch(API_ENDPOINTS.AUTH.USER_PROFILE, {
+          headers: {
+            "Authorization": `JWT ${tokenData.access}`,
+          },
+        });
+
+        if (userResponse.ok) {
+          userData = await userResponse.json();
+          console.log("User profile from API:", userData);
+        } else {
+          throw new Error("Failed to fetch user profile");
+        }
+      } catch (profileError) {
+        console.log("Using user data from JWT token");
+        // If API call fails, use data from JWT token
+        userData = {
+          id: decodedToken.user_id || 0,
+          username: decodedToken.username || formData.username,
+          email: decodedToken.email || '',
+          first_name: decodedToken.first_name || formData.username,
+          last_name: decodedToken.last_name || '',
+          user_type: decodedToken.user_type || 1, // Default to patient
+          phone: decodedToken.phone || ''
+        };
+      }
+
+      // Convert integer user_type to string format
+      const processedUserData = {
+        ...userData,
+        user_type: getUserTypeString(userData.user_type)
       };
 
-      // console.log("Complete user data to save:", completeUserData);
+      
 
-      // 5. Save in AuthContext & AsyncStorage
-      await login(completeUserData, tokenData.access);
+      // 4. Save in AuthContext & AsyncStorage
+      await login(processedUserData, tokenData.access);
 
       Alert.alert("Success", "Login successful!");
-      router.replace("/(tabs)");
+      
+      // 5. Redirect based on user role
+      if (processedUserData.user_type === 'doctor') {
+        console.log("Redirecting to doctor dashboard");
+        router.replace("/(dashboard)/doctor");
+      } else if (processedUserData.user_type === 'admin') {
+        console.log("Redirecting to admin dashboard");
+        router.replace("/(dashboard)/admin");
+      } else {
+        console.log("Redirecting to patient dashboard");
+        router.replace("/(tabs)");
+      }
     } catch (error: any) {
       console.error("Login error:", error);
-      Alert.alert("Error", error.message || "Something went wrong");
+      
+      // More specific error messages
+      if (error.message.includes('token') || error.message.includes('JWT')) {
+        Alert.alert("Login Error", "Invalid session. Please try again.");
+      } else if (error.message.includes('credentials')) {
+        Alert.alert("Login Error", "Invalid username or password");
+      } else if (error.message.includes('network')) {
+        Alert.alert("Network Error", "Please check your internet connection");
+      } else {
+        Alert.alert("Error", error.message || "Something went wrong");
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateField = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -97,9 +180,10 @@ export default function LoginScreen() {
             <TextInput
               className="border border-gray-300 rounded-lg px-4 py-3 bg-white"
               placeholder="Enter your username or email"
-              value={username}
-              onChangeText={setUsername}
+              value={formData.username}
+              onChangeText={(value) => updateField('username', value)}
               autoCapitalize="none"
+              editable={!loading}
             />
           </View>
 
@@ -108,9 +192,10 @@ export default function LoginScreen() {
             <TextInput
               className="border border-gray-300 rounded-lg px-4 py-3 bg-white mb-3"
               placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
+              value={formData.password}
+              onChangeText={(value) => updateField('password', value)}
               secureTextEntry
+              editable={!loading}
             />
           </View>
 
@@ -119,9 +204,11 @@ export default function LoginScreen() {
             onPress={handleLogin}
             disabled={loading}
           >
-            <Text className="text-white text-lg font-semibold">
-              {loading ? "Signing in..." : "Sign In"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white text-lg font-semibold">Sign In</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity className="items-center">
@@ -132,7 +219,7 @@ export default function LoginScreen() {
         {/* Footer */}
         <View className="items-center mt-8">
           <Text className="text-gray-600">
-            Don`t have an account?{" "}
+            Don&#39;t have an account?{" "}
             <Text
               className="text-blue-600 font-semibold"
               onPress={() => router.push("/(auth)/register")}
