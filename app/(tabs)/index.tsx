@@ -132,7 +132,7 @@ export default function HomeScreen() {
                   <Text className="text-purple-600 text-2xl">📋</Text>
                 </View>
                 <Text className="font-semibold text-gray-800 text-center">
-                  My Appointments
+                  My Bookings
                 </Text>
                 <Text className="text-gray-500 text-xs text-center mt-1">
                   View bookings
